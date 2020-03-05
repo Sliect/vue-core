@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>object变化侦测</title>
+</head>
+<body>
+  <script>
+    function removeSub(arr, item) {
+      if (arr.length) {
+        let idx = arr.indexOf(item)
+        if (idx > -1) {
+          return arr.splice(idx, 1)
+        }
+      }
+    }
+    class Dep {
+      constructor() {
+        this.subs = []
+      }
+
+      addSub(sub) {
+        this.subs.push(sub)
+      }
+
+      removeSub(sub) {
+        remove(this.subs, sub)
+      }
+
+      depend() {
+        if (window.target) {
+          this.addSub(window.target)
+        }
+      }
+
+      notify() {
+        let subs = this.subs
+        for (let i=0; i < subs.length; i++) {
+          subs[i].update()
+        }
+      }
+    }
+
+    function parsePath(path) {
+      var bailRE = /^\w.$/
+      if (bailRE.test(path)) return
+      var arr = path.split('.')
+      return function (obj) {
+        for (let i = 0; i < arr.length; i++) {
+          if (!obj) return
+          obj = obj[arr[i]]
+        }
+        return obj
+      }
+    }
+    class Watcher {
+      constructor(vm, expOrFn, cb) {
+        this.vm = vm
+        this.getter = parsePath(expOrFn)
+        this.cb = cb
+        this.value = this.get()
+      }
+
+      get() {
+        window.target = this
+        // 触发收集依赖
+        let value = this.getter.call(this.vm, this.vm)
+        window.target = undefined
+        return value
+      }
+
+      update() {
+        let oldVal = this.value
+        this.value = this.get()
+        this.cb.calll(this.vm, this.value, oldVal)
+      }
+    }
+
+    // 将每一层的对象属性变为响应式监听
+    class Observer {
+      constructor(val) {
+        this.value = val
+
+        if (!Array.isArray(val)) {
+          this.walk(val)
+        }
+      }
+
+      walk(obj) {
+        let keys = Object.keys(obj)
+        for (let i = 0; i < keys.length; i++) {
+          defineReactive(obj, keys[i], obj[keys[i]])
+        }
+      }
+    }
+
+    function defineReactive(data, key, val) {
+      if (typeof val === 'object') {
+        new Observer(val)
+      }
+      // 存储依赖 当属性变化后通知相应的依赖 Watcher
+      var dep = new Dep()
+      Object.defineProperty(data, key, {
+        enumerable: true,
+        configurable: true,
+        get() {
+          dep.depend()
+          return val
+        },
+        set(newVal) {
+          if (val === newVal) return
+          val = newVal
+          dep.notify()
+        }
+      })
+    }
+
+  </script>
+</body>
+</html>
