@@ -1,9 +1,24 @@
 import Dep from './dep'
+import { arrayMethods } from "./array";
+import {
+  def,
+  hasProto,
+  isObject,
+  hasOwn
+} from "../utils";
 
+const arrayKeys = Object.getOwnPropertyNames(arrayMethods)
 export class Observer {
   constructor(value) {
-    if (Array.isArray(value)) {
+    this.value = value
+    this.dep = new Dep()
+    def(value, '__ob__', this)
 
+    if (Array.isArray(value)) {
+      let augment = hasProto ? protoAugment : copyAugment
+      // 兼容性
+      augment(value, arrayMethods, arrayKeys)
+      this.observeArray(value)
     } else {
       this.walk(value)
     }
@@ -15,16 +30,34 @@ export class Observer {
       defineReactive(value, keys[i], value[keys[i]])
     }
   }
+
+  observeArray(items) {
+    for (let i = 0; i < items.length; i++) {
+      observe(items[i])
+    }
+  }
+}
+
+function protoAugment(target, src, keys) {
+  target.__proto__ = src
+}
+
+function copyAugment(target, src, keys) {
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i]
+    def(target, key, src[key])
+  }
 }
 
 export function defineReactive(obj, key, val) {
-  if (typeof val === 'object') {
-    new Observer(val)
-  }
+  // 收集数组依赖
+  let childOb = observe(val)
   let dep = new Dep()
   Object.defineProperty(obj, key, {
     get() {
       dep.depend()
+      // 数组收集依赖
+      if (childOb && Array.isArray(val)) childOb.dep.depend()
       return val
     },
     set(newVal) {
@@ -35,4 +68,18 @@ export function defineReactive(obj, key, val) {
     enumerable: true,
     configurable: true
   })
+}
+
+// 联结 Observer实例 和 响应式对象
+function observe(value) {
+  if (!isObject(value)) return
+  let ob
+  // 避免重复监测
+  if (hasOwn(value, '__ob__') && value.__ob__ instanceof Observer) {
+    ob = value.__ob__
+  } else {
+    ob = new Observer(value)
+  }
+
+  return ob
 }

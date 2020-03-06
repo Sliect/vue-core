@@ -17,7 +17,22 @@
       let original = arrayMethods[method]
       Object.defineProperty(arrayMethods, method, {
         value: function (...args) {
+          // this为响应式数组
           let value = original.apply(this, args)
+          const ob = this.__ob__
+          let inserted
+          switch (method) {
+            case 'push':
+            case 'unshift':
+              inserted = args
+              break
+            case 'splice':
+              inserted = args.slice(2)
+              break
+          }
+          if (inserted) ob.observeArray(inserted)
+          // 数组触发依赖
+          ob.dep.notify()
 
           return value
         },
@@ -48,20 +63,62 @@
       })
     }
 
+    // 将对象变为响应式进行监测
     class Observer {
       constructor(value) {
         this.value = value
+        this.dep = new Dep()
+        def(value, '__ob__', this)
 
         if (Array.isArray(value)) {
           // 拦截
           // value.__proto__ = arrayMethods
           let augment = hasProto ? protoAugment : copyAugment
           augment(value, arrayMethods, mutateMethods)
+
+          this.observeArray(value)
         } else {
           // 将每个属性变为响应式
           this.walk(value)
         }
       }
+
+      observeArray(items) {
+        for (let i = 0; i < items.length; i++) {
+          observe(items[i])
+        }
+      }
+    }
+
+    function defineReactive(data, key, val) {
+      let childOb = observe(val)
+      // 存储依赖 当属性变化后通知相应的依赖 Watcher
+      var dep = new Dep()
+      Object.defineProperty(data, key, {
+        enumerable: true,
+        configurable: true,
+        get() {
+          dep.depend()
+          // 数组收集依赖
+          if (childOb && Array.isArray(val)) childOb.dep.depend()
+          return val
+        },
+        set(newVal) {
+          if (val === newVal) return
+          val = newVal
+          dep.notify()
+        }
+      })
+    }
+
+    // 避免重复监测value变化
+    function observe(value) {
+      if (!isObject(value))  return
+      let ob
+      if (hasOwn(value, '__ob__') && value.__ob__ instanceof Observer) ob = value.__ob__
+      else ob = new Observer(value)
+
+      return ob
     }
 
   </script>
