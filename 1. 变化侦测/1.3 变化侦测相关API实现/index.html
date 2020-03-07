@@ -171,6 +171,29 @@
       const n = parseFloat(String(val))
       return n >= 0 && Math.floor(n) === n && isFinite(val)
     }
+
+    function del(target, key) {
+      if (Array.isArray(target) && isValidArrayIndex(key)) {
+        target.splice(key, 1)
+        return
+      }
+      const ob = target.__ob__
+      if (target._isVue || (ob && ob.vmCount)) {
+        process.env.NODE_ENV !== 'production' && warn(
+          'Avoid deleting properties on a Vue instance or its root $data ' +
+          '- just set it to null.'
+        )
+        return val
+      }
+      if (!hasOwn(target, key)) {
+        return
+      }
+      delete target[key]
+      if (!ob) {
+        return
+      }
+      ob.dep.notify()
+    }
   </script>
 </body>
 </html>

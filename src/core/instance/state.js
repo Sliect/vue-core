@@ -1,9 +1,13 @@
 import { Watcher } from "../observer/watcher";
-import { set } from "../observer";
+import {
+  set,
+  del
+} from "../observer";
 
 export function stateMixin(Vue) {
 
   Vue.prototype.$set = set
+  Vue.prototype.$delete = del
   Vue.prototype.$watch = function (expOrFn, cb, options) {
     const vm = this
     options = options || {}

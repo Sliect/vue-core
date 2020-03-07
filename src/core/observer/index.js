@@ -115,3 +115,30 @@ export function set(target, key, val) {
   ob.dep.notify()
   return val
 }
+
+export function del(target, key) {
+  // 数组
+  if (Array.isArray(target) && isValidArrayIndex(key)) {
+    target.splice(key, 1)
+    return
+  }
+  const ob = target.__ob__
+  // vue实例或根data
+  if (target._isVue || (ob && ob.vmCount)) {
+    process.env.NODE_ENV !== 'production' && warn(
+      'Avoid deleting properties on a Vue instance or its root $data ' +
+      '- just set it to null.'
+    )
+    return
+  }
+  // 不存在该属性
+  if (!hasOwn(target, key)) {
+    return
+  }
+  delete target[key]
+  // 非响应式
+  if (!ob) {
+    return
+  }
+  ob.dep.notify()
+}
