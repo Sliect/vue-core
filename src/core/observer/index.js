@@ -4,7 +4,8 @@ import {
   def,
   hasProto,
   isObject,
-  hasOwn
+  hasOwn,
+  isValidArrayIndex
 } from "../utils";
 
 const arrayKeys = Object.getOwnPropertyNames(arrayMethods)
@@ -12,6 +13,7 @@ export class Observer {
   constructor(value) {
     this.value = value
     this.dep = new Dep()
+    this.vmCount = 0
     def(value, '__ob__', this)
 
     if (Array.isArray(value)) {
@@ -82,4 +84,34 @@ function observe(value) {
   }
 
   return ob
+}
+
+export function set(target, key, val) {
+  // 数组
+  if (Array.isArray(target) && isValidArrayIndex(key)) {
+    target.length = Math.max(target.length, key)
+    target.splice(key, 1, val)
+    return val
+  }
+  // 已存在
+  if (key in target && !(key in Object.prototype)) {
+    target[key] = val
+    return val
+  }
+  // 新增
+  const ob = target.__ob__
+  if (target._isVue || (ob && ob.vmCount)) {
+    process.env.NODE_ENV !== 'production' && warn(
+      'Avoid adding reactive properties to a Vue instance or its root $data ' +
+      'at runtime - declare it upfront in the data option.'
+    )
+    return val
+  }
+  if (!ob) {
+    target[key] = val
+    return val
+  }
+  defineReactive(ob.value, key, val)
+  ob.dep.notify()
+  return val
 }

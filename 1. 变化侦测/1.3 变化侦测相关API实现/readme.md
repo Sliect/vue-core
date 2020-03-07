@@ -21,9 +21,9 @@ how：在Watcher中记录订阅了哪些Dep，并在取消订阅时互相通知�
 
 ## $set
 
-what：
+what：vm.$set(target, key, value)
 
-how：
+how：如果target是响应式的，key被创建后也是响应式，并且触发视图更新
 
 ## $delete
 

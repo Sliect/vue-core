@@ -1,6 +1,9 @@
 import { Watcher } from "../observer/watcher";
+import { set } from "../observer";
 
 export function stateMixin(Vue) {
+
+  Vue.prototype.$set = set
   Vue.prototype.$watch = function (expOrFn, cb, options) {
     const vm = this
     options = options || {}

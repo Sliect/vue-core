@@ -136,6 +136,41 @@
         }
       }
     }
+
+    function set(target, key, val) {
+      // target 为数组
+      if (Array.isArray(target) && isValidArrayIndex(key)) {
+        target.length = Math.max(target.length, key)
+        target.splice(key, 1, val)
+        return val
+      }
+      // 已存在于target中
+      if (key in target && !(key in Object.prototype)) {
+        target[key] = val
+        return val
+      }
+      // 新增属性
+      const ob = target.__ob__
+      if (target._isVue || (ob && ob.vmCount)) {
+        process.env.NODE_ENV !== 'production' && warn(
+          'Avoid adding reactive properties to a Vue instance or its root $data ' +
+          'at runtime - declare it upfront in the data option.'
+        )
+        return val
+      }
+      if (!ob) {
+        target[key] = val
+        return val
+      }
+      defineReactive(ob.value, key, val)
+      ob.dep.notify()
+      return val
+    }
+
+    function isValidArrayIndex(val) {
+      const n = parseFloat(String(val))
+      return n >= 0 && Math.floor(n) === n && isFinite(val)
+    }
   </script>
 </body>
 </html>
