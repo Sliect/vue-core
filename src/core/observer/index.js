@@ -12,13 +12,14 @@ const arrayKeys = Object.getOwnPropertyNames(arrayMethods)
 export class Observer {
   constructor(value) {
     this.value = value
+    // 仅收集数组依赖
     this.dep = new Dep()
     this.vmCount = 0
     def(value, '__ob__', this)
 
     if (Array.isArray(value)) {
       let augment = hasProto ? protoAugment : copyAugment
-      // 兼容性
+      // 兼容性 拦截7个突变的数组方法
       augment(value, arrayMethods, arrayKeys)
       this.observeArray(value)
     } else {
@@ -52,8 +53,8 @@ function copyAugment(target, src, keys) {
 }
 
 export function defineReactive(obj, key, val) {
-  // 收集数组依赖
   let childOb = observe(val)
+  // 收集所有依赖
   let dep = new Dep()
   Object.defineProperty(obj, key, {
     get() {

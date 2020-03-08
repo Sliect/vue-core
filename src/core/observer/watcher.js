@@ -11,7 +11,11 @@ export default class Watcher {
     // 存放订阅了哪些 dep
     this.deps = []
     this.depIds = new Set()
-    this.getter = parsePath(expOrFn)
+    if (typeof expOrFn === 'function') {
+      this.getter = expOrFn
+    } else {
+      this.getter = parsePath(expOrFn)
+    }
     this.cb = cb
     this.value = this.get()
   }
