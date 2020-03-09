@@ -59,8 +59,13 @@ export function defineReactive(obj, key, val) {
   Object.defineProperty(obj, key, {
     get() {
       dep.depend()
-      // 数组收集依赖
-      if (childOb && Array.isArray(val)) childOb.dep.depend()
+      // 数组收集依赖 或者 增删对象属性
+      if (childOb) {
+        childOb.dep.depend()
+        if (Array.isArray(val)) {
+          dependArray(val)
+        }
+      }
       return val
     },
     set(newVal) {
@@ -142,4 +147,14 @@ export function del(target, key) {
     return
   }
   ob.dep.notify()
+}
+
+function dependArray(value) {
+  for (let i = 0; i < value.length; i++) {
+    const e = value[i]
+    e && e.__ob__ && e.__ob__.dep.depend()
+    if (Array.isArray(e)) {
+      dependArray(e)
+    }
+  }
 }
